@@ -8,6 +8,12 @@ const SCENARIO = {
   boxesPerPallet: 24
 };
 
+const HALF_LAYER_HEIGHT = 0.18;
+const HALF_LAYER_FRONT_Z = -0.48;
+const HALF_LAYER_BACK_Z = 0.48;
+const HALF_LAYER_FRONT_COLOR = 0x2f7ed8;
+const HALF_LAYER_BACK_COLOR = 0xe07a1f;
+
 const DEFAULT_CONFIG = {
   simulationMinutes: 60,
   pickDropSeconds: [10, 10, 10, 10],
@@ -676,13 +682,30 @@ function init3DViewer() {
     pallet.position.y = 0.36;
     laneGroup.add(pallet);
 
-    const stack = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, 1, 1.6),
-      new THREE.MeshStandardMaterial({ color: 0x5f5d58, roughness: 0.88 })
-    );
-    stack.scale.y = 0.03;
-    stack.position.y = 0.7;
-    laneGroup.add(stack);
+    const palletTopY = pallet.position.y + 0.35 / 2;
+    const halfLayerMeshes = [];
+    for (let halfLayerIndex = 0; halfLayerIndex < HALF_LAYERS_PER_PALLET; halfLayerIndex += 1) {
+      const placement = describeHalfLayerPlacement(halfLayerIndex);
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(1.75, HALF_LAYER_HEIGHT, 0.9),
+        new THREE.MeshStandardMaterial({
+          color: placement.side === "frontal" ? HALF_LAYER_FRONT_COLOR : HALF_LAYER_BACK_COLOR,
+          roughness: 0.88,
+          transparent: true,
+          opacity: 1
+        })
+      );
+
+      mesh.visible = false;
+      mesh.position.set(
+        0,
+        palletTopY + HALF_LAYER_HEIGHT / 2 + placement.layerIndex * HALF_LAYER_HEIGHT,
+        placement.side === "frontal" ? HALF_LAYER_FRONT_Z : HALF_LAYER_BACK_Z
+      );
+
+      laneGroup.add(mesh);
+      halfLayerMeshes.push(mesh);
+    }
 
     const changeRing = new THREE.Mesh(
       new THREE.TorusGeometry(1.7, 0.06, 12, 40),
@@ -704,7 +727,7 @@ function init3DViewer() {
     viewer.scene.add(laneGroup);
 
     viewer.laneVisuals.push({
-      stack,
+      halfLayerMeshes,
       changeRing
     });
   });
@@ -839,6 +862,7 @@ function computeReplayState(simulation, time) {
 
   let activeEvent = null;
   let lastLane = null;
+  let activePick = null;
 
   for (const event of simulation.events) {
     if ((event.type === "pickdrop" || event.type === "palletChange") && event.end <= time) {
@@ -886,12 +910,19 @@ function computeReplayState(simulation, time) {
     if (activeEvent.type === "pickdrop") {
       const lanePos = viewer.lanePositions[activeEvent.lane];
       const ratio = (time - activeEvent.start) / Math.max(0.001, activeEvent.end - activeEvent.start);
+      const slotIndex = laneHalfLayers[activeEvent.lane];
+      const placement = describeHalfLayerPlacement(slotIndex);
       robotTarget = {
         x: lanePos.x,
         y: Math.sin(ratio * Math.PI * 2) * 0.08,
         z: lanePos.z
       };
-      actionLabel = `Bajando media capa en via ${activeEvent.lane + 1}`;
+      activePick = {
+        laneIndex: activeEvent.lane,
+        slotIndex,
+        pulseRatio: ratio
+      };
+      actionLabel = `Bajando ${placement.side} de capa ${placement.layerNumber} en via ${activeEvent.lane + 1}`;
     }
 
     if (activeEvent.type === "palletChange") {
@@ -917,7 +948,8 @@ function computeReplayState(simulation, time) {
     laneChanging,
     laneCompleted,
     robotTarget,
-    actionLabel
+    actionLabel,
+    activePick
   };
 }
 
@@ -925,15 +957,38 @@ function applyReplayState(state) {
   viewer.robot.position.set(state.robotTarget.x, state.robotTarget.y, state.robotTarget.z);
 
   viewer.laneVisuals.forEach((laneVisual, laneIndex) => {
-    const ratio = state.laneHalfLayers[laneIndex] / HALF_LAYERS_PER_PALLET;
-    const height = 0.03 + ratio * 2.35;
+    const placedHalfLayers = state.laneHalfLayers[laneIndex];
+    laneVisual.halfLayerMeshes.forEach((mesh, index) => {
+      const isPlaced = index < placedHalfLayers;
+      mesh.visible = isPlaced;
+      mesh.material.opacity = 1;
+      mesh.material.emissive = new THREE.Color(0x000000);
+    });
 
-    laneVisual.stack.scale.y = height;
-    laneVisual.stack.position.y = 0.53 + height / 2;
+    if (state.activePick && state.activePick.laneIndex === laneIndex) {
+      const pendingMesh = laneVisual.halfLayerMeshes[state.activePick.slotIndex];
+      if (pendingMesh) {
+        pendingMesh.visible = true;
+        pendingMesh.material.opacity = 0.55 + Math.abs(Math.sin(state.activePick.pulseRatio * Math.PI * 4)) * 0.3;
+        pendingMesh.material.emissive = new THREE.Color(0x111111);
+      }
+    }
 
     laneVisual.changeRing.visible = state.laneChanging[laneIndex];
     laneVisual.changeRing.material.emissive = new THREE.Color(state.laneChanging[laneIndex] ? 0x222222 : 0x000000);
   });
+}
+
+function describeHalfLayerPlacement(halfLayerIndex) {
+  const boundedIndex = clamp(halfLayerIndex, 0, HALF_LAYERS_PER_PALLET - 1);
+  const side = boundedIndex % 2 === 0 ? "frontal" : "posterior";
+  const layerIndex = Math.floor(boundedIndex / 2);
+
+  return {
+    side,
+    layerIndex,
+    layerNumber: layerIndex + 1
+  };
 }
 
 function syncTimelineUI() {
