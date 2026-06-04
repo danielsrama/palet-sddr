@@ -69,7 +69,7 @@ const viewer = {
   robot: null,
   laneVisuals: [],
   lanePositions: [],
-  feederPosition: { x: 0, y: 0, z: -6.8 },
+  feederPosition: { x: 0, y: 0, z: -2.2 },
   width: 0,
   height: 0
 };
@@ -635,18 +635,18 @@ function init3DViewer() {
     new THREE.Vector3(9, 0, 2)
   ];
 
-  viewer.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 300);
-  viewer.camera.position.set(0, 18, 24);
-  viewer.camera.lookAt(0, 0, 0);
+  viewer.camera = new THREE.PerspectiveCamera(43, 1, 0.1, 300);
+  viewer.camera.position.set(0, 9.2, 18.5);
+  viewer.camera.lookAt(0, 1.7, 1.6);
 
   viewer.renderer = new THREE.WebGLRenderer({ antialias: true });
   viewer.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   viewer3d.innerHTML = "";
   viewer3d.appendChild(viewer.renderer.domElement);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.74);
-  const directional = new THREE.DirectionalLight(0xffffff, 0.65);
-  directional.position.set(18, 26, 12);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.76);
+  const directional = new THREE.DirectionalLight(0xffffff, 0.72);
+  directional.position.set(20, 19, 11);
   viewer.scene.add(ambient, directional);
 
   const floor = new THREE.Mesh(
@@ -743,36 +743,132 @@ function init3DViewer() {
 function createRobotMesh() {
   const robotGroup = new THREE.Group();
 
-  const base = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.7, 0.9, 0.5, 24),
-    new THREE.MeshStandardMaterial({ color: 0x1f1f1f, roughness: 0.5, metalness: 0.4 })
-  );
-  base.position.y = 0.25;
-  robotGroup.add(base);
+  const whitePaint = new THREE.MeshStandardMaterial({ color: 0xf2f2ef, roughness: 0.58, metalness: 0.2 });
+  const whiteShade = new THREE.MeshStandardMaterial({ color: 0xe3e5e4, roughness: 0.62, metalness: 0.18 });
+  const darkMetal = new THREE.MeshStandardMaterial({ color: 0x232323, roughness: 0.46, metalness: 0.5 });
+  const blackMatt = new THREE.MeshStandardMaterial({ color: 0x101010, roughness: 0.72, metalness: 0.2 });
 
-  const torso = new THREE.Mesh(
-    new THREE.BoxGeometry(0.7, 1.9, 0.7),
-    new THREE.MeshStandardMaterial({ color: 0x2d2d2d, roughness: 0.45, metalness: 0.35 })
+  const basePlate = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.15, 1.25, 0.28, 28),
+    darkMetal
   );
-  torso.position.y = 1.45;
-  robotGroup.add(torso);
+  basePlate.position.y = 0.14;
+  robotGroup.add(basePlate);
 
-  const arm = new THREE.Mesh(
-    new THREE.BoxGeometry(1.5, 0.2, 0.4),
-    new THREE.MeshStandardMaterial({ color: 0x585858, roughness: 0.5, metalness: 0.3 })
+  const pedestal = new THREE.Mesh(
+    new THREE.BoxGeometry(1.35, 2.35, 1.35),
+    whitePaint
   );
-  arm.position.set(0.85, 2.2, 0);
-  robotGroup.add(arm);
+  pedestal.position.y = 1.32;
+  robotGroup.add(pedestal);
 
-  const gripper = new THREE.Mesh(
-    new THREE.BoxGeometry(0.35, 0.35, 0.35),
-    new THREE.MeshStandardMaterial({ color: 0x8f8f8a, roughness: 0.5, metalness: 0.25 })
+  const topHousing = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.7, 0.7, 0.46, 24),
+    darkMetal
   );
-  gripper.position.set(1.55, 2.0, 0);
-  robotGroup.add(gripper);
+  topHousing.position.y = 2.7;
+  robotGroup.add(topHousing);
+
+  const turretPivot = new THREE.Group();
+  turretPivot.position.set(0, 2.82, 0);
+  robotGroup.add(turretPivot);
+
+  const shoulderJoint = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.36, 0.36, 0.62, 20),
+    darkMetal
+  );
+  shoulderJoint.rotation.z = Math.PI / 2;
+  turretPivot.add(shoulderJoint);
+
+  const upperPivot = new THREE.Group();
+  upperPivot.position.set(0.12, 0.1, 0);
+  turretPivot.add(upperPivot);
+
+  const upperArm = new THREE.Mesh(
+    new THREE.BoxGeometry(3.9, 0.5, 0.62),
+    whitePaint
+  );
+  upperArm.position.x = 1.95;
+  upperPivot.add(upperArm);
+
+  const elbowPivot = new THREE.Group();
+  elbowPivot.position.set(3.9, 0, 0);
+  upperPivot.add(elbowPivot);
+
+  const elbowJoint = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.3, 0.3, 0.56, 20),
+    darkMetal
+  );
+  elbowJoint.rotation.z = Math.PI / 2;
+  elbowPivot.add(elbowJoint);
+
+  const forearm = new THREE.Mesh(
+    new THREE.BoxGeometry(2.9, 0.45, 0.56),
+    whiteShade
+  );
+  forearm.position.x = 1.45;
+  elbowPivot.add(forearm);
+
+  const wristPivot = new THREE.Group();
+  wristPivot.position.set(2.9, 0, 0);
+  elbowPivot.add(wristPivot);
+
+  const wristCore = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.22, 0.4, 20),
+    darkMetal
+  );
+  wristCore.rotation.z = Math.PI / 2;
+  wristPivot.add(wristCore);
+
+  const toolFrame = new THREE.Mesh(
+    new THREE.BoxGeometry(1.25, 0.16, 1.1),
+    blackMatt
+  );
+  toolFrame.position.set(0, -0.52, 0);
+  wristPivot.add(toolFrame);
+
+  const suctionBlock = new THREE.Mesh(
+    new THREE.BoxGeometry(0.98, 0.28, 0.78),
+    darkMetal
+  );
+  suctionBlock.position.set(0, -0.75, 0);
+  wristPivot.add(suctionBlock);
+
+  const bumperLeft = new THREE.Mesh(
+    new THREE.BoxGeometry(0.12, 0.52, 0.12),
+    darkMetal
+  );
+  bumperLeft.position.set(0.08, -0.66, 0.44);
+  wristPivot.add(bumperLeft);
+
+  const bumperRight = bumperLeft.clone();
+  bumperRight.position.z = -0.44;
+  wristPivot.add(bumperRight);
+
+  const statusLed = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 14, 14),
+    new THREE.MeshStandardMaterial({ color: 0x37e56b, emissive: 0x1cb347, emissiveIntensity: 0.55 })
+  );
+  statusLed.position.set(0.56, 0.4, 0.7);
+  robotGroup.add(statusLed);
+
+  robotGroup.userData.joints = {
+    turretPivot,
+    upperPivot,
+    elbowPivot,
+    wristPivot,
+    toolFrame,
+    baseToolY: toolFrame.position.y,
+    upperLength: 3.9,
+    forearmLength: 2.9,
+    shoulderHeight: turretPivot.position.y,
+    robotScale: 1.55,
+    toolDrop: Math.abs(suctionBlock.position.y)
+  };
 
   robotGroup.position.copy(viewer.feederPosition);
   robotGroup.position.y = 0;
+  robotGroup.scale.set(1.55, 1.55, 1.55);
   return robotGroup;
 }
 
@@ -954,7 +1050,44 @@ function computeReplayState(simulation, time) {
 }
 
 function applyReplayState(state) {
-  viewer.robot.position.set(state.robotTarget.x, state.robotTarget.y, state.robotTarget.z);
+  viewer.robot.position.set(viewer.feederPosition.x, 0, viewer.feederPosition.z);
+
+  const joints = viewer.robot.userData.joints;
+  if (joints) {
+    const worldTargetX = state.robotTarget.x;
+    const worldTargetZ = state.robotTarget.z;
+    const worldTargetY = state.activePick ? 1.05 : 1.5;
+
+    const localX = worldTargetX - viewer.feederPosition.x;
+    const localZ = worldTargetZ - viewer.feederPosition.z;
+    joints.turretPivot.rotation.y = Math.atan2(-localZ, localX);
+
+    const radialDistanceWorld = Math.hypot(localX, localZ);
+    const shoulderWorldY = joints.shoulderHeight * joints.robotScale;
+    const wristTargetWorldY = worldTargetY + joints.toolDrop * joints.robotScale;
+    const radialDistance = radialDistanceWorld / joints.robotScale;
+    const verticalDistance = (wristTargetWorldY - shoulderWorldY) / joints.robotScale;
+
+    const l1 = joints.upperLength;
+    const l2 = joints.forearmLength;
+    const minReach = Math.abs(l1 - l2) + 0.01;
+    const maxReach = l1 + l2 - 0.01;
+    const targetDistance = clamp(Math.hypot(radialDistance, verticalDistance), minReach, maxReach);
+
+    const elbowCos = clamp((radialDistance * radialDistance + verticalDistance * verticalDistance - l1 * l1 - l2 * l2) / (2 * l1 * l2), -1, 1);
+    const elbowAngle = -Math.acos(elbowCos);
+    const shoulderAngle = Math.atan2(verticalDistance, radialDistance)
+      - Math.atan2(l2 * Math.sin(elbowAngle), l1 + l2 * Math.cos(elbowAngle));
+
+    const pickPulse = state.activePick
+      ? Math.sin(state.activePick.pulseRatio * Math.PI * 2)
+      : -0.25;
+
+    joints.upperPivot.rotation.z = shoulderAngle + pickPulse * 0.04;
+    joints.elbowPivot.rotation.z = elbowAngle - pickPulse * 0.06;
+    joints.wristPivot.rotation.z = -(joints.upperPivot.rotation.z + joints.elbowPivot.rotation.z) + pickPulse * 0.04;
+    joints.toolFrame.position.y = joints.baseToolY - Math.abs(pickPulse) * 0.1;
+  }
 
   viewer.laneVisuals.forEach((laneVisual, laneIndex) => {
     const placedHalfLayers = state.laneHalfLayers[laneIndex];
