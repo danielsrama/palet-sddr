@@ -14,6 +14,7 @@
   <div class="bg-shape bg-shape-b"></div>
 
   <main class="page">
+    <section id="mainView">
     <header class="hero">
       <p class="eyebrow">ANALISIS OPERATIVO</p>
       <h1>Simulador de Dejadas de Robot</h1>
@@ -21,46 +22,10 @@
         Comparador de algoritmos de paletizado para celda de 4 vias en escenario
         <strong>PERFUMERIA</strong>.
       </p>
+      <div class="hero-actions">
+        <button type="button" id="openConfigBtn" class="btn btn-primary">Configuracion</button>
+      </div>
     </header>
-
-    <section class="panel" aria-labelledby="config-title">
-      <div class="panel-head">
-        <h2 id="config-title">Configuracion</h2>
-        <span id="persistState" class="lock-state">Se guarda en este navegador</span>
-      </div>
-
-      <div class="scenario-box">
-        <h3>Escenario activo: PERFUMERIA</h3>
-        <p>2 bultos por media capa, 24 bultos por pale.</p>
-      </div>
-
-      <form id="configForm" novalidate>
-        <div class="grid two-col">
-          <label>
-            Periodo a simular (min)
-            <input type="number" min="1" step="1" name="simulationMinutes" value="60" required />
-          </label>
-        </div>
-
-        <h3>Tiempo recoger 2 bultos y bajar a pale (s)</h3>
-        <div class="grid four-col" id="pickDropGrid"></div>
-
-        <h3>Tiempo cambio entre vias (s)</h3>
-        <div class="matrix-wrap" id="transitionMatrix"></div>
-
-        <h3>Tiempo de retirada/colocacion de pale por via (s)</h3>
-        <div class="grid four-col" id="palletChangeGrid"></div>
-
-        <h3>Tiempo entre llegadas de bulto a mesa por via (s)</h3>
-        <div class="grid four-col" id="arrivalGrid"></div>
-
-        <div class="actions">
-          <button type="submit" class="btn btn-primary">Guardar configuracion y simular</button>
-          <button type="button" id="rerunBtn" class="btn btn-ghost">Recalcular</button>
-          <button type="button" id="resetBtn" class="btn btn-ghost">Restablecer valores</button>
-        </div>
-      </form>
-    </section>
 
     <section class="panel" aria-labelledby="results-title">
       <div class="panel-head">
@@ -78,12 +43,16 @@
 
       <div class="player-controls-wrap">
         <div class="player-row">
-          <label>
+          <label class="algo-field">
             Algoritmo para reproducir
-            <select id="playerAlgorithm">
-              <option value="2vias">2 VIAS Estricto</option>
-              <option value="4vias">4 VIAS</option>
-            </select>
+            <span class="algo-select-row">
+              <select id="playerAlgorithm">
+                <option value="2vias">2 VIAS Estricto</option>
+                <option value="4vias">4 VIAS</option>
+                <option value="1via">1 VIA</option>
+              </select>
+              <button type="button" id="algoInfoBtn" class="info-btn" aria-expanded="false" aria-controls="algoInfo" title="Descripcion del algoritmo">i</button>
+            </span>
           </label>
 
           <label>
@@ -103,6 +72,8 @@
           </div>
         </div>
 
+        <div id="algoInfo" class="algo-info" hidden></div>
+
         <div class="player-row timeline-row">
           <input type="range" id="playerTimeline" min="0" max="1" step="0.1" value="0" />
           <div class="timeline-meta">
@@ -113,6 +84,53 @@
       </div>
 
       <div id="viewer3d" class="viewer3d" role="img" aria-label="Visualizacion 3D de robot y vias"></div>
+    </section>
+    </section>
+
+    <section id="configView" hidden>
+      <section class="panel" aria-labelledby="config-title">
+        <div class="panel-head">
+          <h2 id="config-title">Configuracion</h2>
+          <span id="persistState" class="lock-state">Se guarda en este navegador</span>
+        </div>
+
+        <div class="scenario-box">
+          <h3>Escenario activo: PERFUMERIA</h3>
+          <p>2 bultos por media capa, 24 bultos por pale.</p>
+        </div>
+
+        <form id="configForm" novalidate>
+          <div class="grid two-col">
+            <label>
+              Periodo a simular (min)
+              <input type="number" min="1" step="1" name="simulationMinutes" value="60" required />
+            </label>
+            <label>
+              Tiempo entre batches de 24 (s)
+              <input type="number" min="0" step="0.1" name="batchInterval" value="30" required />
+            </label>
+          </div>
+
+          <h3>Tiempo recoger 2 bultos y bajar a pale (s)</h3>
+          <div class="grid four-col" id="pickDropGrid"></div>
+
+          <h3>Tiempo cambio entre vias (s)</h3>
+          <div class="matrix-wrap" id="transitionMatrix"></div>
+
+          <h3>Tiempo de retirada/colocacion de pale por via (s)</h3>
+          <div class="grid four-col" id="palletChangeGrid"></div>
+
+          <h3>Tiempo entre llegadas de bulto a mesa por via (s)</h3>
+          <div class="grid four-col" id="arrivalGrid"></div>
+
+          <div class="actions">
+            <button type="submit" class="btn btn-primary">Guardar configuracion y simular</button>
+            <button type="button" id="rerunBtn" class="btn btn-ghost">Recalcular</button>
+            <button type="button" id="resetBtn" class="btn btn-ghost">Restablecer valores</button>
+            <button type="button" id="backBtn" class="btn btn-ghost">Volver</button>
+          </div>
+        </form>
+      </section>
     </section>
   </main>
 
